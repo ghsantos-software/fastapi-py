@@ -21,21 +21,21 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      # sem --upgrade pip: a versão vem da imagem do runner (achado #3)
+      # --only-binary=:all-: só instala wheels, nunca roda setup.py de um sdist (achado #5)
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+        run: pip install --only-binary=:all: -r requirements-dev.txt
 
       - name: Lint
         run: ruff check .
 
-      - name: Apply migration disposable SQLite database
+      - name: Apply migrations to a disposable SQLite database
         run: alembic upgrade head
 
       - name: Check for drift between models and migrations
         run: alembic check
 
-      - name: Smoke test de import
+      - name: Import smoke test
         run: python -c "import main; print('app imports OK')"
 
       - name: Tests
@@ -46,9 +46,10 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      # third-party actions pinadas em SHA imutável (achados #1 e #2)
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - name: Build image (validate Dockerfile, no push)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           push: false
