@@ -1,0 +1,37 @@
+# Controle de versão
+.git/
+.gitignore
+
+# Ambientes virtuais e cache do Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Bancos locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache de testes/ferramentas
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Segredos e env local
+.env
+.env.*
+!.env.example
+
+# Meta que não precisa dentro da imagem
+.github/
+README.md
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
