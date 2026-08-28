@@ -1,17 +1,8 @@
-# uvicorn main:app --reload - código para rodar no terminal 
-
-import os  # importa a biblioteca os para acessar as variáveis de ambiente do sistema operacional
-
-from dotenv import (
-    load_dotenv,  # importa a função load_dotenv para carregar as variáveis de ambiente do arquivo .env
-)
-from fastapi import FastAPI  # importa a classe FastAPI para criar a aplicação web
-from fastapi.security import (
-    OAuth2PasswordBearer,  # importa a classe OAuth2PasswordBearer para criar o esquema de autenticação OAuth2 com senha e token de acesso
-)
-from passlib.context import (
-    CryptContext,  # importa a classe CryptContext para criar o contexto de criptografia de senhas
-)
+import os
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.security import OAuth2PasswordBearer
+from passlib.context import CryptContext
 
 # Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
