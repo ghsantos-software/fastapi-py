@@ -1,9 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException # importa o APIRouter para criar rotas, Depends para injeção de dependências e HTTPException para tratamento de erros
-from sqlalchemy.orm import Session # importa a classe Session do SQLAlchemy para gerenciar sessões de banco de dados
-from dependencies import get_session, verify_token # importa as funções get_session e verify_token do arquivo dependencies.py para gerenciar sessões de banco de dados e verificar tokens de autenticação
-from schemas import OrderSchema, ItemOrderSchema, ResponseOrderSchema # importa os schemas OrderSchema, ItemOrderSchema e ResponseOrderSchema do arquivo schemas.py para validação de dados
-from models import Order, User, ItemOrder # importa as classes Order, User e ItemOrder do arquivo models.py para manipulação de dados do banco de dados
-from typing import List # importa a classe List do módulo typing para tipagem de listas
+from typing import List  # importa a classe List do módulo typing para tipagem de listas
+
+from fastapi import (  # importa o APIRouter para criar rotas, Depends para injeção de dependências e HTTPException para tratamento de erros
+    APIRouter,
+    Depends,
+    HTTPException,
+)
+from sqlalchemy.orm import (
+    Session,  # importa a classe Session do SQLAlchemy para gerenciar sessões de banco de dados
+)
+
+from dependencies import (  # importa as funções get_session e verify_token do arquivo dependencies.py para gerenciar sessões de banco de dados e verificar tokens de autenticação
+    get_session,
+    verify_token,
+)
+from models import (  # importa as classes Order, User e ItemOrder do arquivo models.py para manipulação de dados do banco de dados
+    ItemOrder,
+    Order,
+    User,
+)
+from schemas import (  # importa os schemas OrderSchema, ItemOrderSchema e ResponseOrderSchema do arquivo schemas.py para validação de dados
+    ItemOrderSchema,
+    OrderSchema,
+    ResponseOrderSchema,
+)
 
 order_router = APIRouter(prefix="/orders", tags=["orders"], dependencies=[Depends(verify_token)])
 
@@ -120,6 +139,6 @@ async def view_order(id_order: int, session: Session = Depends(get_session), use
    
 # Listagem de todos os pedidos de 1 usuario  
 @order_router.get("/list/orders-user", response_model=List[ResponseOrderSchema])
-async def list_orders(session = Depends(get_session), user: User = Depends(verify_token)):
+async def list_one_orders(session = Depends(get_session), user: User = Depends(verify_token)):
         orders = session.query(Order).filter(Order.user==user.id).all()
         return orders

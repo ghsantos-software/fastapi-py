@@ -1,5 +1,12 @@
-from pydantic import BaseModel # importa a classe BaseModel do módulo pydantic para validação de dados
-from typing import Optional, List # importa a classe Optional do módulo typing para tipagem de valores opcionais
+from typing import (  # importa a classe Optional do módulo typing para tipagem de valores opcionais
+    List,
+    Optional,
+)
+
+from pydantic import (
+    BaseModel,  # importa a classe BaseModel do módulo pydantic para validação de dados
+)
+
 
 # User schema para validação de dados 
 class UserSchema(BaseModel):
