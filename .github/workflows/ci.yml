@@ -24,7 +24,8 @@ jobs:
       # sem --upgrade pip: a versão vem da imagem do runner (achado #3)
       # --only-binary=:all-: só instala wheels, nunca roda setup.py de um sdist (achado #5)
       - name: Install dependencies
-        run: pip install --only-binary=:all: -r requirements-dev.txt
+        run: |
+          pip install --only-binary=:all: -r requirements-dev.txt
 
       - name: Lint
         run: ruff check .
