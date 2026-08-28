@@ -8,7 +8,5 @@ services:
     env_file:
       - .env
     volumes:
-      # Mantém banco.db e o código sincronizados com a sua pasta local.
-      # Para dev; em produção troca por Postgres.
       - .:/app
     restart: unless-stopped

@@ -36,9 +36,9 @@ jobs:
         run: alembic check
 
       - name: Smoke test de import
-        run: python -c "import main; print('app importa OK')"
+        run: python -c "import main; print('app imports OK')"
 
-      - name: Testes
+      - name: Tests
         run: pytest -q
 
   docker-build:
@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build da imagem (valida o Dockerfile, sem push)
+      - name: Build image (validate Dockerfile, no push)
         uses: docker/build-push-action@v6
         with:
           context: .
