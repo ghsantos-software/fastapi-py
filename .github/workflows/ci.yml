@@ -9,10 +9,29 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+
+    # container Postgres que roda ao lado do job (igual ao "db" do compose)
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fastapi
+          POSTGRES_PASSWORD: fastapi
+          POSTGRES_DB: fastapi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fastapi -d fastapi"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
       SECRET_KEY: dummy-key-for-ci
       ALGORITHM: HS256
       ACESS_TOKEN_EXPIRE_MINUTES: "30"
+      DATABASE_URL: postgresql://fastapi:fastapi@localhost:5432/fastapi
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,8 +40,6 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      # sem --upgrade pip: a versão vem da imagem do runner (achado #3)
-      # --only-binary=:all-: só instala wheels, nunca roda setup.py de um sdist (achado #5)
       - name: Install dependencies
         run: |
           pip install --only-binary=:all: -r requirements-dev.txt
@@ -30,7 +47,7 @@ jobs:
       - name: Lint
         run: ruff check .
 
-      - name: Apply migrations to a disposable SQLite database
+      - name: Apply migrations
         run: alembic upgrade head
 
       - name: Check for drift between models and migrations
