@@ -1,6 +1,16 @@
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, Float, ForeignKey # importa a função create_engine para criar a conexão com o banco de dados e as classes Column, String, Integer, Boolean, Float e ForeignKey para definir os tipos de dados das colunas das tabelas do banco de dados
-from sqlalchemy.orm import declarative_base, relationship # importa a função declarative_base para criar a base do banco de dados e a função relationship para criar relacionamentos entre tabelas
-from sqlalchemy_utils import ChoiceType # importa a classe ChoiceType para criar campos com valores pré-definidos (choices) nas tabelas do banco de dados
+from sqlalchemy import (  # importa a função create_engine para criar a conexão com o banco de dados e as classes Column, String, Integer, Boolean, Float e ForeignKey para definir os tipos de dados das colunas das tabelas do banco de dados
+    Boolean,
+    Column,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    create_engine,
+)
+from sqlalchemy.orm import (  # importa a função declarative_base para criar a base do banco de dados e a função relationship para criar relacionamentos entre tabelas
+    declarative_base,
+    relationship,
+)
 
 # Cria a conexão do banco de dados 
 db = create_engine("sqlite:///banco.db")
