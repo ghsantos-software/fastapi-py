@@ -1,24 +1,14 @@
-from sqlalchemy import (  # importa a função create_engine para criar a conexão com o banco de dados e as classes Column, String, Integer, Boolean, Float e ForeignKey para definir os tipos de dados das colunas das tabelas do banco de dados
-    Boolean,
-    Column,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    create_engine,
-)
-from sqlalchemy.orm import (  # importa a função declarative_base para criar a base do banco de dados e a função relationship para criar relacionamentos entre tabelas
-    declarative_base,
-    relationship,
-)
+import os
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, create_engine, Boolean
+from sqlalchemy.orm import declarative_base, relationship
 
-# Cria a conexão do banco de dados 
-db = create_engine("sqlite:///banco.db")
+# Lê a URL do banco da variável de ambiente; usa SQLite local se não houver
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///banco.db")
 
-# Cria a base do banco de dados 
+# Cria a conexão do banco de dados
+db = create_engine(DATABASE_URL)
+
 Base = declarative_base()
-
-# Cria a tabela/classes do banco de dados 
 
 # Usuários
 class User(Base):
@@ -82,7 +72,5 @@ class ItemOrder(Base):
         self.size = size
         self.unit_price = unit_price
         self.order = order
-
-# Executa a criação dos metadados do banco de dados 
 
 
