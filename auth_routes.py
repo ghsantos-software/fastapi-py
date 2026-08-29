@@ -1,41 +1,12 @@
-from datetime import (  # importa as classes datetime, timedelta e timezone do módulo datetime para manipulação de datas e horários
-    datetime,
-    timedelta,
-    timezone,
-)
-
-from fastapi import (  # importa o APIRouter para criar rotas, Depends para injeção de dependências e HTTPException para tratamento de erros
-    APIRouter,
-    Depends,
-    HTTPException,
-)
-from fastapi.security import (
-    OAuth2PasswordBearer,  # importa a classe OAuth2PasswordBearer para criar o esquema de autenticação OAuth2 com senha e token de acesso
-)
-from jose import (  # importa a função jwt para decodificar o token de acesso do usuário e a classe JWSError para tratar erros de decodificação do token
-    jwt,
-)
-from sqlalchemy.orm import (
-    Session,  # importa a classe Session do SQLAlchemy para gerenciar sessões de banco de dados
-)
-
-from dependencies import (  # importa as funções get_session e verify_token do arquivo dependencies.py para gerenciar sessões de banco de dados e verificar tokens de autenticação
-    get_session,
-    verify_token,
-)
-from main import (  # importa as variáveis bcrypt_content, ALGORITHM, ACESS_TOKEN_EXPIRE_MINUTES e SECRET_KEY do arquivo main.py para criar o contexto de criptografia de senhas e decodificar o token de acesso do usuário
-    ACESS_TOKEN_EXPIRE_MINUTES,
-    ALGORITHM,
-    SECRET_KEY,
-    bcrypt_content,
-)
-from models import (
-    User,  # importa a classe User do arquivo models.py para manipulação de dados do banco de dados
-)
-from schemas import (  # importa os schemas UserSchema e LoginSchema do arquivo schemas.py para validação de dados
-    LoginSchema,
-    UserSchema,
-)
+from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt
+from sqlalchemy.orm import Session
+from dependencies import get_session, verify_token
+from main import ACESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY, bcrypt_content
+from models import User
+from schemas import LoginSchema, UserSchema
 
 # Cria o router de autenticação
 auth_router = APIRouter(prefix="/auth", tags=["auth"])

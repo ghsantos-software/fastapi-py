@@ -1,28 +1,9 @@
-from typing import List  # importa a classe List do módulo typing para tipagem de listas
-
-from fastapi import (  # importa o APIRouter para criar rotas, Depends para injeção de dependências e HTTPException para tratamento de erros
-    APIRouter,
-    Depends,
-    HTTPException,
-)
-from sqlalchemy.orm import (
-    Session,  # importa a classe Session do SQLAlchemy para gerenciar sessões de banco de dados
-)
-
-from dependencies import (  # importa as funções get_session e verify_token do arquivo dependencies.py para gerenciar sessões de banco de dados e verificar tokens de autenticação
-    get_session,
-    verify_token,
-)
-from models import (  # importa as classes Order, User e ItemOrder do arquivo models.py para manipulação de dados do banco de dados
-    ItemOrder,
-    Order,
-    User,
-)
-from schemas import (  # importa os schemas OrderSchema, ItemOrderSchema e ResponseOrderSchema do arquivo schemas.py para validação de dados
-    ItemOrderSchema,
-    OrderSchema,
-    ResponseOrderSchema,
-)
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from dependencies import get_session, verify_token
+from models import ItemOrder, Order, User
+from schemas import ItemOrderSchema, OrderSchema, ResponseOrderSchema
 
 order_router = APIRouter(prefix="/orders", tags=["orders"], dependencies=[Depends(verify_token)])
 
