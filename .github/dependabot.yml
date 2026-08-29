@@ -24,3 +24,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # a imagem Python só recebe bump de patch automático;
+      # minor/major eu subo à mão, junto com o python-version do ci.yml
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-major"
