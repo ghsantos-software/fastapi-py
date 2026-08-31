@@ -1,32 +1,67 @@
+# ============================================================
+# docker-compose.yml
+# Sobe a API + um Postgres juntos, para rodar na sua máquina.
+#   subir:  docker compose up --build
+#   parar:  docker compose down
+# ============================================================
+
 services:
+
+  # ---------- Serviço 1: a nossa API ----------
   api:
-    build: .
-    image: fastapi-py:latest
+    build: .                     # constrói a imagem usando o Dockerfile desta pasta
+    image: fastapi-py:latest     # nome que a imagem construída recebe
+
     ports:
-      - "8000:8000"
+      - "8000:8000"              # porta 8000 do PC -> porta 8000 dentro do container
+
     env_file:
-      - .env
+      - .env                     # carrega SECRET_KEY, ALGORITHM, POSTGRES_* do arquivo .env
+
     environment:
+      # o código lê a variável DATABASE_URL para achar o banco.
+      # "db" é o nome do outro serviço abaixo; o Docker resolve isso como um endereço de rede.
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+
     depends_on:
       db:
-        condition: service_healthy
-    restart: unless-stopped
+        condition: service_healthy   # só sobe a API DEPOIS do Postgres aceitar conexão
 
+    volumes:
+      - .:/app                   # espelha esta pasta dentro do container:
+                                 # salva um .py aqui e o container vê na hora
+
+    # troca o CMD do Dockerfile só no dev, para ligar o --reload
+    # (o servidor reinicia sozinho quando você salva um arquivo).
+    # OBS: o ENTRYPOINT do Dockerfile continua rodando antes -> as migrações são aplicadas.
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+    restart: unless-stopped      # se o container cair, o Docker sobe de novo
+
+  # ---------- Serviço 2: o banco de dados ----------
   db:
-    image: postgres:16
+    image: postgres:16           # imagem oficial do PostgreSQL 16
+
     environment:
+      # o Postgres cria esse usuário/senha/banco na primeira vez que sobe
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+
     volumes:
+      # guarda os dados num "volume" nomeado -> os dados NÃO somem no "docker compose down"
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
+      # o Docker roda isso de tempos em tempos pra saber se o Postgres já está pronto.
+      # é o que faz o "condition: service_healthy" lá em cima funcionar.
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
+
     restart: unless-stopped
 
+# declara o volume nomeado usado pelo serviço db
 volumes:
   postgres_data:

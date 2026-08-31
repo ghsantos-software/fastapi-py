@@ -1,25 +1,35 @@
+# ============================================================
+# ci.yml — o "robô" que roda a cada push/PR pra branch main.
+# Se qualquer passo falhar, o PR fica bloqueado pra merge.
+# ============================================================
+
 name: CI
 
+# Quando rodar:
 on:
   push:
-    branches: [main]
+    branches: [main]          # depois de um merge na main
   pull_request:
-    branches: [main]
+    branches: [main]          # em todo PR aberto contra a main
 
-# menor privilégio: o token do workflow só precisa ler o repositório
+# O token que o robô usa só precisa LER o repositório (menos poder = mais seguro).
 permissions:
   contents: read
 
-# push novo no mesmo PR cancela a execução anterior (economiza minutos); em main não cancela
+# Se você empurrar 2 vezes seguidas no mesmo PR, cancela a execução anterior
+# em vez de deixar as duas rodando (economiza minutos).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 jobs:
-  quality:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
 
+  # ---------- Job 1: qualidade (lint + migração + testes) ----------
+  quality:
+    runs-on: ubuntu-latest     # máquina Linux limpa, fornecida pelo GitHub
+    timeout-minutes: 10        # se travar, o GitHub mata em 10 min
+
+    # Sobe um Postgres descartável ao lado deste job (só existe enquanto o job roda).
     services:
       db:
         image: postgres:16
@@ -29,12 +39,15 @@ jobs:
           POSTGRES_DB: fastapi
         ports:
           - 5432:5432
+        # ">-" junta as linhas abaixo numa string só. Opções do healthcheck:
+        # o GitHub espera o Postgres responder ao "pg_isready" antes de rodar os steps.
         options: >-
           --health-cmd "pg_isready -U fastapi -d fastapi"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
+    # Variáveis fictícias: a app lê essas no import, senão nem carrega.
     env:
       SECRET_KEY: dummy-key-for-ci
       ALGORITHM: HS256
@@ -42,44 +55,50 @@ jobs:
       DATABASE_URL: postgresql://fastapi:fastapi@localhost:5432/fastapi
 
     steps:
-      - uses: actions/checkout@v7
+      # "uses:" = ação pronta (de terceiros).   "run:" = comando de shell nosso.
+      - uses: actions/checkout@v7        # baixa o código do repo pra máquina
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@v7    # instala o Python
         with:
-          python-version: "3.14"
-          cache: pip
+          python-version: "3.14"        # mesma versão do Dockerfile
+          cache: pip                    # guarda os downloads do pip entre execuções
 
       - name: Install dependencies
         run: |
           pip install --only-binary=:all: -r requirements-dev.txt
 
       - name: Lint
-        run: ruff check .
+        run: ruff check .               # checa estilo e ordem dos imports
 
       - name: Apply migrations
-        run: alembic upgrade head
+        run: alembic upgrade head       # roda as migrações no Postgres do "services"
 
       - name: Check for drift between models and migrations
-        run: alembic check
+        run: alembic check              # os models batem com as migrações?
 
       - name: Import smoke test
-        run: python -c "import main; print('app imports OK')"
+        run: python -c "import main; print('app imports OK')"   # a app carrega sem erro?
 
       - name: Tests
         run: pytest -q
 
+  # ---------- Job 2: build da imagem Docker ----------
   docker-build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: quality
+    needs: quality                      # só roda se o job "quality" passou
+
     steps:
       - uses: actions/checkout@v7
+      # As ações do "docker" ficam pinadas num SHA fixo (o comentário diz a versão).
+      # Mais seguro: uma tag "@v4" pode ser reapontada; um SHA nunca muda.
+      # O Dependabot atualiza esses SHAs sozinho.
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Build image (validate Dockerfile, no push)
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
-          push: false
+          push: false                   # só valida que a imagem builda; não publica
           tags: fastapi-py:ci
-          cache-from: type=gha
+          cache-from: type=gha          # reaproveita camadas de builds anteriores
           cache-to: type=gha,mode=max
