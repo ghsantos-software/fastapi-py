@@ -1,40 +1,34 @@
-from typing import (  # importa a classe Optional do módulo typing para tipagem de valores opcionais
-    List,
-    Optional,
-)
+from typing import List, Optional
 
-from pydantic import (
-    BaseModel,  # importa a classe BaseModel do módulo pydantic para validação de dados
-)
+from pydantic import BaseModel
 
 
-# User schema para validação de dados 
 class UserSchema(BaseModel):
-    name: str 
+    name: str
     email: str
-    password: str 
-    active: Optional[bool] = True 
+    password: str
+    active: Optional[bool] = True
     administrator: Optional[bool] = False
 
     class Config:
-        from_attributes = True # informa que vai ser uma classe transformada em sql no banco de dados (uma conexão com a classe models)
+        from_attributes = True
 
-# Login schema para validação de dados
+
 class OrderSchema(BaseModel):
     user: int
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
-# ItemOrder schema para validação de dados
+
 class LoginSchema(BaseModel):
     email: str
-    password: str 
+    password: str
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
-# ItemOrder schema para validação de dados
+
 class ItemOrderSchema(BaseModel):
     amount: int
     taste: str
@@ -42,14 +36,14 @@ class ItemOrderSchema(BaseModel):
     unit_price: float
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
-# Order schema para validação de dados
+
 class ResponseOrderSchema(BaseModel):
     id: int
     status: str
     price: float
-    items: List[ItemOrderSchema] 
+    items: List[ItemOrderSchema]
 
     class Config:
         from_attributes = True
