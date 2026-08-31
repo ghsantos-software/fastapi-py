@@ -1,5 +1,14 @@
 import os
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, create_engine
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    create_engine,
+)
 from sqlalchemy.orm import declarative_base, relationship
 
 # Lê a URL do banco da variável de ambiente; usa SQLite local se não houver

@@ -3,7 +3,8 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session, sessionmaker
 
 from main import ALGORITHM, SECRET_KEY, oauth2_schema
-from models import User, db]
+from models import User, db
+
 
 # Sessão do banco de dados
 def get_session():
