@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.security import OAuth2PasswordBearer
-from passlib.context import CryptContext
 
 # Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -15,7 +14,6 @@ ACESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACESS_TOKEN_EXPIRE_MINUTES"))
 # Cria a instância da aplicação FastAPI
 app = FastAPI()
 
-bcrypt_content = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/login-form")
 
 # Importa as rotas do arquivo order_routes.py e auth_routes.py

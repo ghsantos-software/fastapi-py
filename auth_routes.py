@@ -6,17 +6,18 @@ from jose import jwt
 from sqlalchemy.orm import Session
 
 from dependencies import get_session, verify_token
-from main import ACESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY, bcrypt_content
+from main import ACESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 from models import User
 from schemas import LoginSchema, UserSchema
+from security import hash_password, verify_password
 
 # Cria o router de autenticação
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Cria o tokjen de acesso do usuário
+# Cria o token de acesso do usuário
 def create_token(id_user, token_duration=timedelta(minutes=ACESS_TOKEN_EXPIRE_MINUTES)):
     expiration_date = datetime.now(timezone.utc) + token_duration
-    dic_info = {"sub": str[id_user], "expiration": expiration_date}
+    dic_info = {"sub": str(id_user), "exp": expiration_date}
     jwt_encoded = jwt.encode(dic_info, SECRET_KEY, ALGORITHM)
     return jwt_encoded
 
@@ -25,7 +26,7 @@ def authenticate_user(email, password, session):
     user = session.query(User).filter(User.email==email).first()
     if not user:
         return False
-    elif not bcrypt_content.verify(password, user.password):
+    elif not verify_password(password, user.password):
         return False
     return user
 
@@ -42,7 +43,7 @@ async def create_account(user_schema: UserSchema, session: Session = Depends(get
         raise HTTPException(status_code=400, detail="User email already registered!")
     
     else:
-        encrypted_password = bcrypt_content.hash(user_schema.password) # processo de criptografia de senha em hash
+        encrypted_password = hash_password(user_schema.password) # processo de criptografia de senha em hash
         new_user = User(user_schema.name, user_schema.email, encrypted_password, user_schema.active, user_schema.administrator)
         session.add(new_user)
         session.commit()

@@ -15,12 +15,13 @@ async def orders():
     return{"mensagem": "You have accessed the orders route."}
 
 # Criar pedido
-@order_router.get("/")
-async def create_order(order_schema: OrderSchema, session: Session = Depends(get_session)): # cria um pedido no banco de dados
-    new_order = Order(user=order_schema.id_user)
+@order_router.post("/order")
+async def create_order(order_schema: OrderSchema, session: Session = Depends(get_session)):
+    new_order = Order(user=order_schema.user)
     session.add(new_order)
     session.commit()
-    return{"message": f"Order successfully created. Order ID:{new_order} "}
+    session.refresh(new_order)
+    return {"message": f"Order successfully created. Order ID: {new_order.id}"}
 
 # Cancelar pedido
 @order_router.post("/order/cancel/{id_order}")
