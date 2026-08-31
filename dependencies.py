@@ -1,25 +1,9 @@
-from fastapi import (  # importa o Depends para injeção de dependências e HTTPException para tratamento de erros
-    Depends,
-    HTTPException,
-)
-from jose import (  # importa a função jwt para decodificar o token de acesso do usuário e a classe JWTError para tratar erros de decodificação do token
-    JWTError,
-    jwt,
-)
-from sqlalchemy.orm import (  # importa a classe Session do SQLAlchemy para gerenciar sessões de banco de dados
-    Session,
-    sessionmaker,
-)
+from fastapi import Depends, HTTPException
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session, sessionmaker
 
-from main import (  # importa as variáveis SECRET_KEY, ALGORITHM e oauth2_schema do arquivo main.py para decodificar o token de acesso do usuário
-    ALGORITHM,
-    SECRET_KEY,
-    oauth2_schema,
-)
-from models import (
-    User,  # importa a classe User do arquivo models.py para manipulação de dados do banco de dados
-    db,  # importa a variável db do arquivo models.py para criar a conexão com o banco de dados
-)
+from main import ALGORITHM, SECRET_KEY, oauth2_schema
+from models import User, db
 
 
 # Sessão do banco de dados
