@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 
+import jwt
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
 from sqlalchemy.orm import Session
 
 from dependencies import get_session, verify_token
@@ -16,7 +16,7 @@ auth_router = APIRouter(prefix="/auth", tags=["auth"])
 def create_token(id_user, token_duration=timedelta(minutes=ACESS_TOKEN_EXPIRE_MINUTES)):
     expiration_date = datetime.now(timezone.utc) + token_duration
     dic_info = {"sub": str(id_user), "exp": expiration_date}
-    jwt_encoded = jwt.encode(dic_info, SECRET_KEY, ALGORITHM)
+    jwt_encoded = jwt.encode(dic_info, SECRET_KEY, algorithm=ALGORITHM)
     return jwt_encoded
 
 def authenticate_user(email, password, session):
