@@ -26,7 +26,7 @@ class User(Base):
     id = Column("id", Integer, primary_key=True, autoincrement=True)
     name = Column("name", String)
     email = Column("email", String, nullable=False) # não pode ser vazio 
-    password = Column("password", Integer)
+    password = Column("password", String, nullable=False)
     active = Column("status", Boolean)
     administrator = Column("admin", Boolean, default=False) # ou vai ser verdadeiro ou falso
 
