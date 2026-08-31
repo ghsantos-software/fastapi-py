@@ -19,7 +19,7 @@ branches e análise de código.
 - **API:** FastAPI + Uvicorn (Python 3.14)
 - **Banco de dados:** PostgreSQL via SQLAlchemy (SQLite como alternativa para rodar local sem Docker)
 - **Migrações:** Alembic
-- **Autenticação:** JWT (`python-jose`) + hash de senha com `bcrypt`
+- **Autenticação:** JWT (`PyJWT`) + hash de senha com `bcrypt`
 - **Qualidade:** Ruff (lint), Pytest + cobertura
 - **DevOps:** Docker, Docker Compose, GitHub Actions, Dependabot
 

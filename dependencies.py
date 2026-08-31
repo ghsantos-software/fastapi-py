@@ -1,5 +1,5 @@
+import jwt
 from fastapi import Depends, HTTPException
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session, sessionmaker
 
 from main import ALGORITHM, SECRET_KEY, oauth2_schema
@@ -19,9 +19,9 @@ def get_session():
 def verify_token(token: str = Depends(oauth2_schema), session: Session = Depends(get_session)):
     """Valida o token JWT e devolve o usuário dono dele."""
     try:
-        dic_info = jwt.decode(token, SECRET_KEY, ALGORITHM)
+        dic_info = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         id_user = int(dic_info.get("sub"))
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Access denied, verify the validity of the token.")
 
     user = session.query(User).filter(User.id==id_user).first()
