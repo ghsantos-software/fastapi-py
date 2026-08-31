@@ -13,8 +13,8 @@ class UserSchema(BaseModel):
     name: str 
     email: str
     password: str 
-    active: Optional[bool]
-    administrator: Optional[bool]
+    active: Optional[bool] = True 
+    administrator: Optional[bool] = False
 
     class Config:
         from_attributes = True # informa que vai ser uma classe transformada em sql no banco de dados (uma conexão com a classe models)
