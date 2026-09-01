@@ -124,6 +124,9 @@ verdes. Um merge na `main` dispara re-deploy automático no Render.
 O Dependabot abre PRs semanais de atualização para pip, GitHub Actions e a
 imagem base do Docker. SonarCloud e GitGuardian analisam cada PR.
 
+
+Incidentes e as melhorias que eles geraram ficam em [`docs/postmortems/`](docs/postmortems/).
+
 ## Roadmap
 
 - [x] Containerização (Dockerfile + Compose)
