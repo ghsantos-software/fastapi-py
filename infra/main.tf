@@ -208,10 +208,16 @@ resource "aws_instance" "api" {
   key_name                    = var.ssh_key_name
   associate_public_ip_address = true
 
+  metadata_options {
+    http_tokens   = "required"
+    http_endpoint = "enabled"
+  }
+
   # 20 GB (o padrão de 8 GB fica apertado com imagens + Postgres).
   root_block_device {
     volume_size = 20
     volume_type = "gp3"
+    encrypted   = true
   }
 
   # Roda uma vez no primeiro boot: instala Docker + plugin do compose.

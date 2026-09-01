@@ -2,10 +2,13 @@
 
 [![CI](https://github.com/ghsantos-software/fastapi-py/actions/workflows/ci.yml/badge.svg)](https://github.com/ghsantos-software/fastapi-py/actions/workflows/ci.yml)
 
+🔗 **Demo ao vivo:** https://fastapi-py-ptd6.onrender.com/docs
+> Free tier — a primeira requisição após inatividade pode levar ~50s (o serviço "dorme").
+
 Uma pequena API REST para gerenciamento de usuários e pedidos, desenvolvida como
 projeto de estudo para praticar um fluxo completo de engenharia de software:
-containers, migrações, CI, atualização automatizada de dependências, proteção de
-branches e análise de código.
+containers, migrações, CI/CD, infraestrutura como código, atualização
+automatizada de dependências, proteção de branches e análise de código.
 
 ## Funcionalidades
 
@@ -21,7 +24,8 @@ branches e análise de código.
 - **Migrações:** Alembic
 - **Autenticação:** JWT (`PyJWT`) + hash de senha com `bcrypt`
 - **Qualidade:** Ruff (lint), Pytest + cobertura
-- **DevOps:** Docker, Docker Compose, GitHub Actions, Dependabot
+- **DevOps:** Docker, Docker Compose, GitHub Actions, Dependabot, Terraform
+- **Deploy:** Render (aplicação) + Neon (PostgreSQL) — free tier
 
 ## Executando com Docker (recomendado)
 
@@ -80,18 +84,20 @@ alembic revision -m "descreva a mudança"
 ## Estrutura do projeto
 
 ```
-main.py              Ponto de entrada, config, registro das rotas
-models.py            Modelos SQLAlchemy
-schemas.py           Schemas Pydantic
-security.py          Funções de hash de senha
-dependencies.py      Sessão do banco + verificação de token
-auth_routes.py       Endpoints /auth
-order_routes.py      Endpoints /orders
-alembic/             Migrações
-tests/               Suíte de testes (banco isolado)
-Dockerfile           Imagem da aplicação
-docker-compose.yml   Stack local (API + PostgreSQL)
-.github/             Workflow de CI e config do Dependabot
+main.py               Ponto de entrada, config, registro das rotas
+models.py             Modelos SQLAlchemy
+schemas.py            Schemas Pydantic
+security.py           Funções de hash de senha
+dependencies.py       Sessão do banco + verificação de token
+auth_routes.py        Endpoints /auth
+order_routes.py       Endpoints /orders
+docker-entrypoint.sh  Aplica migrações e sobe o servidor
+alembic/              Migrações
+tests/                Suíte de testes (banco isolado)
+infra/                Terraform para AWS (ECR + EC2 + IAM)
+Dockerfile            Imagem da aplicação
+docker-compose.yml    Stack local (API + PostgreSQL)
+.github/              Workflows de CI e config do Dependabot
 ```
 
 ## CI/CD
@@ -101,10 +107,13 @@ A cada push e pull request, o GitHub Actions roda:
 - **quality** — Ruff, `alembic upgrade head`, `alembic check` (divergência entre
   modelos e migrações), um teste de importação, e o Pytest com cobertura
 - **docker-build** — builda a imagem Docker para validar o Dockerfile
+- **terraform** — `terraform fmt` + `validate` na pasta `infra/` (só quando ela muda)
 
 A branch `main` é protegida: mudanças só entram via pull request com os checks
-verdes. O Dependabot abre PRs semanais de atualização para pip, GitHub Actions e
-a imagem base do Docker. SonarCloud e GitGuardian analisam cada PR.
+verdes. Um merge na `main` dispara re-deploy automático no Render.
+
+O Dependabot abre PRs semanais de atualização para pip, GitHub Actions e a
+imagem base do Docker. SonarCloud e GitGuardian analisam cada PR.
 
 ## Roadmap
 
@@ -112,7 +121,7 @@ a imagem base do Docker. SonarCloud e GitGuardian analisam cada PR.
 - [x] PostgreSQL com migrações Alembic
 - [x] Pipeline de CI (lint, migrações, testes + cobertura, build da imagem)
 - [x] Dependabot, proteção de branch, análise de código
-- [ ] Publicar a imagem num registry (GHCR / ECR)
-- [ ] Deploy com URL pública
-- [ ] Infraestrutura como código (Terraform)
+- [x] Deploy com URL pública (Render + Neon, free tier)
+- [x] Infraestrutura como código — Terraform para AWS (ECR + EC2 + IAM), validado no CI
+- [ ] Publicar a imagem no GHCR pelo CI
 - [ ] Manifests de Kubernetes
