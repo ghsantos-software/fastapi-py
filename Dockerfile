@@ -33,7 +33,7 @@ RUN pip install --no-cache-dir --only-binary=:all: -r requirements.txt
 #   - deixa explícito o que a app precisa pra rodar
 # Copiado como root -> o appuser consegue LER e executar, mas não MODIFICAR o código.
 COPY main.py models.py schemas.py dependencies.py auth_routes.py order_routes.py \
-    alembic.ini docker-entrypoint.sh ./
+    security.py alembic.ini docker-entrypoint.sh ./
 COPY alembic/ ./alembic/
 
 # Daqui pra frente o container roda como "appuser", não como root.
