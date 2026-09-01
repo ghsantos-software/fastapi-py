@@ -24,7 +24,7 @@ automatizada de dependências, proteção de branches e análise de código.
 - **Migrações:** Alembic
 - **Autenticação:** JWT (`PyJWT`) + hash de senha com `bcrypt`
 - **Qualidade:** Ruff (lint), Pytest + cobertura
-- **DevOps:** Docker, Docker Compose, GitHub Actions, Dependabot, Terraform
+- **DevOps:** Docker, Docker Compose, GitHub Actions, Dependabot, Terraform, GHCR
 - **Deploy:** Render (aplicação) + Neon (PostgreSQL) — free tier
 
 ## Executando com Docker (recomendado)
@@ -41,6 +41,14 @@ docker compose up --build
 
 A API sobe em http://localhost:8000 (docs em `/docs`). As migrações rodam
 automaticamente na subida; os dados do PostgreSQL ficam num volume nomeado.
+
+## Imagem Docker
+
+Publicada no GitHub Container Registry a cada merge na `main` (tags `latest` e o SHA do commit):
+
+```bash
+docker pull ghcr.io/ghsantos-software/fastapi-py:latest
+```
 
 ## Desenvolvimento local (sem Docker)
 
@@ -106,7 +114,8 @@ A cada push e pull request, o GitHub Actions roda:
 
 - **quality** — Ruff, `alembic upgrade head`, `alembic check` (divergência entre
   modelos e migrações), um teste de importação, e o Pytest com cobertura
-- **docker-build** — builda a imagem Docker para validar o Dockerfile
+- **docker-build** — builda a imagem Docker; em PR só valida o Dockerfile, no
+  merge para `main` publica em `ghcr.io/ghsantos-software/fastapi-py` (`latest` + SHA)
 - **terraform** — `terraform fmt` + `validate` na pasta `infra/` (só quando ela muda)
 
 A branch `main` é protegida: mudanças só entram via pull request com os checks
@@ -123,5 +132,5 @@ imagem base do Docker. SonarCloud e GitGuardian analisam cada PR.
 - [x] Dependabot, proteção de branch, análise de código
 - [x] Deploy com URL pública (Render + Neon, free tier)
 - [x] Infraestrutura como código — Terraform para AWS (ECR + EC2 + IAM), validado no CI
-- [ ] Publicar a imagem no GHCR pelo CI
+- [x] Publicar a imagem no GHCR pelo CI
 - [ ] Manifests de Kubernetes
