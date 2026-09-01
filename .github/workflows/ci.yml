@@ -82,23 +82,42 @@ jobs:
       - name: Tests
         run: pytest -q
 
-  # ---------- Job 2: build da imagem Docker ----------
+  # ---------- Job 2: imagem Docker ----------
+  # Em PR: só valida que a imagem builda.
+  # Em merge na main: builda E publica no GitHub Container Registry (ghcr.io).
   docker-build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: quality                      # só roda se o job "quality" passou
+    needs: quality
+
+    permissions:
+      contents: read    # checkout
+      packages: write   # publicar a imagem no ghcr.io
 
     steps:
       - uses: actions/checkout@v7
-      # As ações do "docker" ficam pinadas num SHA fixo (o comentário diz a versão).
-      # Mais seguro: uma tag "@v4" pode ser reapontada; um SHA nunca muda.
-      # O Dependabot atualiza esses SHAs sozinho.
+
+      # Ações do "docker" pinadas em SHA (o Dependabot atualiza sozinho).
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
-      - name: Build image (validate Dockerfile, no push)
+
+      # Login no ghcr.io com o token que o GitHub já dá pro workflow.
+      # Só roda no merge pra main (em PR não publica, então não precisa logar).
+      - name: Login no GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e (na main) push
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
-          push: false                   # só valida que a imagem builda; não publica
-          tags: fastapi-py:ci
-          cache-from: type=gha          # reaproveita camadas de builds anteriores
+          # publica só quando é push na main; em pull_request fica false
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          cache-from: type=gha
           cache-to: type=gha,mode=max
