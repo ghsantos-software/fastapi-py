@@ -1,0 +1,44 @@
+# ============================================================
+# terraform.yml — valida o Terraform (infra/) a cada mudança.
+# Só roda "fmt" e "validate": não faz init com backend nem apply,
+# então não precisa de credencial AWS e não cria nada.
+# ============================================================
+
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths: ["infra/**", ".github/workflows/terraform.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["infra/**", ".github/workflows/terraform.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Formatação
+        run: terraform fmt -check -recursive
+
+      - name: Init (sem backend)
+        run: terraform init -backend=false
+
+      - name: Validar
+        run: terraform validate
