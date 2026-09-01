@@ -208,7 +208,6 @@ resource "aws_instance" "api" {
   key_name                    = var.ssh_key_name
   associate_public_ip_address = true
 
-    # IMDSv2 obrigatório (protege as credenciais da instância contra SSRF)
   metadata_options {
     http_tokens   = "required"
     http_endpoint = "enabled"
