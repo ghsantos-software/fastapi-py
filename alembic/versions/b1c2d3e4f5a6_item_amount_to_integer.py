@@ -15,10 +15,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Converte só o que for inteiro válido; qualquer lixo (vazio, decimal,
+    # texto) vira NULL em vez de abortar a migração.
     op.alter_column(
         "Items_Order", "amount",
         existing_type=sa.String(), type_=sa.Integer(),
-        existing_nullable=True, postgresql_using="amount::integer",
+        existing_nullable=True,
+        postgresql_using="CASE WHEN amount ~ '^-?[0-9]+$' THEN amount::integer END",
     )
 
 

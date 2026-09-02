@@ -50,9 +50,9 @@ async def add_item_order(id_order: int,
                          user: User = Depends(verify_token)):
     order = session.query(Order).filter(Order.id==id_order).first()
     if not order:
-        raise HTTPException(status_code=400, detail="Order not found")
+        raise HTTPException(status_code=400)
     if not user.administrator and user.id != order.user:
-        raise HTTPException(status_code=401, detail="Without authorization")
+        raise HTTPException(status_code=401)
     item_order = ItemOrder(item_order_schema.amount,
                            item_order_schema.taste,
                            item_order_schema.size,
@@ -76,6 +76,8 @@ async def remove_item_order(id_item_order: int,
     if not item_order:
         raise HTTPException(status_code=400, detail="Item not found")
     order = session.query(Order).filter(Order.id==item_order.order).first()
+    if not order:
+        raise HTTPException(status_code=400, detail="Order not found")
     if not user.administrator and user.id != order.user:
         raise HTTPException(status_code=401, detail="Without authorization")
     session.delete(item_order)
