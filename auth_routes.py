@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from dependencies import get_session, verify_token
@@ -59,8 +59,8 @@ async def login(login_schema: LoginSchema, session: Session = Depends(get_sessio
                 }
 
 @auth_router.post("/login-form")
-async def login_form(from_date: OAuth2PasswordBearer = Depends(), session: Session = Depends(get_session)):
-    user = authenticate_user(from_date.username, from_date.password, session)
+async def login_form(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
+    user = authenticate_user(form_data.username, form_data.password, session)
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
 

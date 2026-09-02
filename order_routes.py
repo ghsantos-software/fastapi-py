@@ -32,18 +32,16 @@ async def cancel_order(id_order: int, session: Session = Depends(get_session), u
     session.commit()
     return {
         "message": f"Order number: {id_order} successfully cancelled.",
-        "Order": Order
+        "status": order.status
     }
 
-@order_router.get("/list")
+@order_router.get("/list", response_model=List[ResponseOrderSchema])
 async def list_orders(session = Depends(get_session), user: User = Depends(verify_token)):
     if not user.administrator:
         raise HTTPException(status_code=401, detail="Without authorization")
     else:
         orders = session.query(Order).all()
-        return {
-            "orders":orders
-        }
+        return orders
 
 @order_router.post("/order/add-item/{id_order}")
 async def add_item_order(id_order: int,
@@ -52,20 +50,21 @@ async def add_item_order(id_order: int,
                          user: User = Depends(verify_token)):
     order = session.query(Order).filter(Order.id==id_order).first()
     if not order:
-        raise HTTPException(status_code=400)
+        raise HTTPException(status_code=400, detail="Order not found")
     if not user.administrator and user.id != order.user:
-        raise HTTPException(status_code=401)
+        raise HTTPException(status_code=401, detail="Without authorization")
     item_order = ItemOrder(item_order_schema.amount,
                            item_order_schema.taste,
                            item_order_schema.size,
                            item_order_schema.unit_price,
                            id_order)
     session.add(item_order)
+    session.flush()
     order.calculate_price()
     session.commit()
     return {
         "message": "Item successfully created",
-        "item": item_order,
+        "item_id": item_order.id,
         "price": order.price
     }
 
@@ -74,17 +73,19 @@ async def remove_item_order(id_item_order: int,
                             session: Session = Depends(get_session),
                             user: User = Depends(verify_token)):
     item_order = session.query(ItemOrder).filter(ItemOrder.id==id_item_order).first()
-    order = session.query(Order).filter(Order.id==item_order.order).first()
     if not item_order:
         raise HTTPException(status_code=400, detail="Item not found")
+    order = session.query(Order).filter(Order.id==item_order.order).first()
     if not user.administrator and user.id != order.user:
         raise HTTPException(status_code=401, detail="Without authorization")
     session.delete(item_order)
+    session.flush()
     order.calculate_price()
     session.commit()
     return {
         "message": "Item successfully removed",
-        "order": order
+        "order_id": order.id,
+        "price": order.price
     }
 
 @order_router.post("/order/finish/{id_order}")
@@ -98,7 +99,7 @@ async def finish_order(id_order: int, session: Session = Depends(get_session), u
     session.commit()
     return {
         "message": f"Order number: {order.id} successfully completed.",
-        "order": order
+        "status": order.status
     }
 
 @order_router.get("/order/{id_order}")
@@ -110,7 +111,7 @@ async def view_order(id_order: int, session: Session = Depends(get_session), use
         raise HTTPException(status_code=401, detail="Without authorization")
     return {
         "amount_items_order": len(order.items),
-        "order": order
+        "order": ResponseOrderSchema.model_validate(order)
     }
 
 @order_router.get("/list/orders-user", response_model=List[ResponseOrderSchema])

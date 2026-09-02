@@ -60,7 +60,7 @@ class ItemOrder(Base):
     __tablename__ = "Items_Order"
 
     id = Column("id", Integer, primary_key=True, autoincrement=True)
-    amount = Column("amount", String)
+    amount = Column("amount", Integer)
     taste = Column("taste", String)
     size = Column("size", String)
     unit_price = Column("unit_price", Float)
