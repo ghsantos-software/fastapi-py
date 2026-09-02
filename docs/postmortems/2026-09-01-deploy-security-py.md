@@ -1,81 +1,79 @@
-# Postmortem — deploy falho por módulo ausente na imagem
+# O primeiro deploy não subiu porque faltou um arquivo dentro da imagem Docker
 
 | | |
 |---|---|
 | **Data** | 2026-09-01 |
-| **Serviço** | `fastapi-py` (Render + Neon) |
-| **Severidade** | Alta — serviço não subiu |
-| **Impacto a usuários** | Nenhum (primeiro deploy do serviço) |
-| **Duração** | ~15 min entre o deploy falho e a correção no ar |
+| **Serviço** | fastapi-py (Render + Neon) |
+| **Gravidade** | Alta — o serviço não subiu |
+| **Impacto** | Nenhum — era o primeiro deploy, ninguém usava ainda |
+| **Tempo até resolver** | Uns 15 minutos |
 | **Status** | Resolvido |
 
-## Resumo
+## O que aconteceu
 
-O primeiro deploy da aplicação no Render falhou no boot com
-`ModuleNotFoundError: No module named 'security'`. As migrações do banco rodaram
-com sucesso, mas o `uvicorn` não conseguiu carregar a aplicação. A causa foi um
-módulo da aplicação que não estava na lista de `COPY` do `Dockerfile` — a imagem
-era buildada sem ele.
+Foi a primeira vez que subi a API no Render. O build da imagem passou, as
+migrações do banco rodaram certinho, mas na hora de ligar o servidor deu:
 
-## Impacto
+```
+ModuleNotFoundError: No module named 'security'
+```
 
-- O serviço `fastapi-py` não ficou disponível até a correção.
-- Nenhum usuário afetado: era a primeira publicação, sem tráfego anterior.
-- O banco (Neon) ficou consistente — as migrações são aplicadas antes do
-  servidor subir.
+Ou seja: a aplicação tentou importar o `security.py` (que faz o hash da senha) e
+esse arquivo simplesmente não estava dentro da imagem.
 
-## Linha do tempo
+## Teve impacto?
 
-| Hora (aprox.) | Evento |
+Não. Era o primeiro deploy, sem ninguém usando. O banco também ficou de boa,
+porque as migrações rodam **antes** do servidor ligar — então não teve banco
+pela metade.
+
+## Como foi rolando
+
+| Hora (mais ou menos) | O que rolou |
 |---|---|
-| 18:22 | Serviço criado no Render; primeiro build a partir do `Dockerfile`. |
-| 18:23 | Deploy falha no boot: `ModuleNotFoundError: No module named 'security'`. Migrações do Alembic já haviam rodado. |
-| 18:30 | Causa raiz identificada: o `COPY` explícito do `Dockerfile` não lista `security.py`. |
-| 18:34 | PR de correção mergeado (`fix(docker): copy security.py into the image`). |
-| 18:35 | Render re-deploya automaticamente. Status `live`. Fluxo cadastro → login → pedido validado em produção. |
+| 18:22 | Criei o serviço no Render, primeiro build a partir do `Dockerfile`. |
+| 18:23 | Deploy falha ao ligar: `ModuleNotFoundError: No module named 'security'`. As migrações já tinham rodado. |
+| 18:30 | Achei o motivo: o `Dockerfile` copia arquivo por arquivo, e `security.py` não estava nessa lista. |
+| 18:34 | Merge do PR de correção (`fix(docker): copy security.py into the image`). |
+| 18:35 | Render re-deploya sozinho. Serviço no ar. Testei cadastro → login → pedido em produção, tudo ok. |
 
-## Causa raiz
+## Por que aconteceu
 
-O `Dockerfile` copia os arquivos da aplicação por **lista explícita**
-(`COPY main.py models.py ... ./`) em vez de `COPY . .`. Essa escolha foi feita
-para não levar segredos e artefatos para dentro da imagem e para satisfazer a
-análise de segurança.
+Meu `Dockerfile` não usa `COPY . .` (que copiaria a pasta inteira). Ele lista os
+arquivos um por um (`COPY main.py models.py ... ./`), pra não jogar segredo e
+lixo dentro da imagem e pra não levantar alerta no scanner de segurança.
 
-Quando o módulo `security.py` (hashing de senha) foi criado em um PR anterior,
-ele **não foi adicionado a essa lista**. A partir daí, a imagem passou a ser
-construída sem o arquivo.
+O problema: quando criei o `security.py` num PR anterior, **esqueci de adicionar
+ele nessa lista**. Daí em diante a imagem passou a ser construída sem o arquivo,
+e eu não percebi.
 
-## Fatores contribuintes
+E teve um detalhe que escondeu o erro: o passo do CI que builda a imagem
+**só buildava, nunca rodava** a imagem. Então "a imagem foi construída" ficava
+verde mesmo faltando um arquivo. O outro teste de import do CI rodava em cima do
+código clonado (onde o `security.py` existe), não em cima da imagem.
 
-- O job `docker-build` do CI **buildava** a imagem mas **nunca a executava** —
-  então "a imagem builda" ficava verde mesmo com um módulo faltando.
-- O passo *Import smoke test* do CI roda contra o código do checkout (onde
-  `security.py` existe), não contra a imagem.
-- O `security.py` entrou em um PR focado em correção de bugs; o efeito no
-  `Dockerfile` passou despercebido na revisão.
+## Como eu descobri
 
-## Detecção
+Na marra: o deploy falhou e o erro apareceu no log do Render, já apontando o
+nome do arquivo.
 
-Falha no primeiro deploy do serviço no Render (visível nos logs do deploy).
+## O que me salvou
 
-## O que funcionou bem
+- As migrações rodam antes do servidor, então o banco não ficou quebrado.
+- O deploy automático do Render: bastou o merge pra correção ir pro ar.
+- A mensagem de erro era direta e dizia exatamente qual módulo faltava.
 
-- As migrações rodam no entrypoint **antes** do servidor: o banco não ficou em
-  estado inconsistente.
-- O deploy automático do Render transformou a correção em um único merge.
-- A mensagem de erro era explícita e apontava o arquivo.
+## O que eu aprendi
 
-## O que não funcionou
+- **"A imagem buildou" não é o mesmo que "a imagem roda".** Tem que ligar a
+  imagem no CI, nem que seja só pra fazer um `import`.
+- Copiar arquivo por arquivo no `Dockerfile` é frágil: todo arquivo novo é uma
+  chance de esquecer.
 
-- O CI dava **confiança falsa**: `docker-build` verde não significava "a imagem
-  roda".
-- `COPY` por lista explícita é frágil a arquivos novos e não tinha rede de
-  proteção.
+## O que já fiz e o que falta
 
-## Ações
-
-| Ação | Status |
+| Item | Situação |
 |---|---|
-| Adicionar `security.py` ao `COPY` do `Dockerfile` | ✅ Feito |
-| CI: carregar a imagem (`load`) e rodar `python -c "import main"` **dentro dela** a cada execução | ✅ Feito neste PR |
-| Reavaliar `COPY` explícito vs `COPY . .` + `.dockerignore` robusto | ⏳ Pendente — `COPY . .` reintroduz um alerta do SonarCloud; por ora, mantida a lista + o smoke test como rede de proteção |
+| Adicionar `security.py` no `COPY` do `Dockerfile` | ✅ feito |
+| CI agora carrega a imagem e roda `python -c "import main"` **dentro dela** | ✅ feito |
+| Decidir entre lista explícita e `COPY . .` com um `.dockerignore` bom | ⏳ pendente — `COPY . .` faz voltar um alerta do SonarCloud, então por ora fiquei com a lista + o teste de import como rede de segurança |
