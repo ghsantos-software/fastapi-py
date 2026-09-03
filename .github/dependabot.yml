@@ -1,33 +1,20 @@
 version: 2
 updates:
-  # Dependências Python (requirements.txt e requirements-dev.txt na raiz)
-  - package-ecosystem: "pip"
-    directory: "/"
+  # dependências Python (requirements.txt / requirements-dev.txt)
+  - package-ecosystem: pip
+    directory: /
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      python:
-        patterns: ["*"]
+      interval: weekly
+    open-pull-requests-limit: 1
 
-  # Actions usadas nos workflows (.github/workflows/*.yml)
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  # as actions usadas nos workflows (uses: actions/checkout@v4 ...)
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "weekly"
-    groups:
-      actions:
-        patterns: ["*"]
+      interval: weekly
 
-  # Imagem base do Dockerfile
-  - package-ecosystem: "docker"
-    directory: "/"
+  # a imagem base do Dockerfile (FROM python:3.12-slim)
+  - package-ecosystem: docker
+    directory: /
     schedule:
-      interval: "weekly"
-    ignore:
-      # a imagem Python só recebe bump de patch automático;
-      # minor/major eu subo à mão, junto com o python-version do ci.yml
-      - dependency-name: "python"
-        update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-major"
+      interval: weekly

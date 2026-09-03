@@ -1,49 +1,40 @@
-import os
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-os.environ.setdefault("SECRET_KEY", "test-secret")
-os.environ.setdefault("ALGORITHM", "HS256")
-os.environ.setdefault("ACESS_TOKEN_EXPIRE_MINUTES", "30")
+from database import Base, obter_banco
+from main import app
 
-import pytest  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import create_engine  # noqa: E402
-from sqlalchemy.orm import sessionmaker  # noqa: E402
-from sqlalchemy.pool import StaticPool  # noqa: E402
+# Banco de teste: SQLite na MEMÓRIA (some quando o processo acaba).
+# StaticPool = mantém 1 conexão só, senão o banco em memória "some" entre chamadas.
 
-# Importa main primeiro: carrega todas as rotas e resolve o import circular.
-from main import app  # noqa: E402
-
-# Banco de teste: SQLite na memória, uma conexão só compartilhada (StaticPool).
-test_engine = create_engine(
+engine_teste = create_engine(
     "sqlite://",
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
-TestingSession = sessionmaker(bind=test_engine, autoflush=False)
+SessaoTeste = sessionmaker(bind=engine_teste, autoflush=False, autocommit=False)
 
 
 @pytest.fixture
-def session():
-    # cria as tabelas antes do teste e apaga depois (cada teste começa limpo)
-    from models import Base
+def cliente():
+    # cria as tabelas a partir dos modelos, antes do teste
+    Base.metadata.create_all(bind=engine_teste)
 
-    Base.metadata.create_all(bind=test_engine)
-    db = TestingSession()
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=test_engine)
+    # versão de teste da dependência: usa o banco de teste
+    def obter_banco_teste():
+        banco = SessaoTeste()
+        try:
+            yield banco
+        finally:
+            banco.close()
 
-
-@pytest.fixture
-def client(session):
-    # troca o get_session real pelo banco de teste durante o teste
-    from dependencies import get_session
-
-    def override_get_session():
-        yield session
-
-    app.dependency_overrides[get_session] = override_get_session
+    # troca o obter_banco real pelo de teste, só durante o teste
+    app.dependency_overrides[obter_banco] = obter_banco_teste
     yield TestClient(app)
+
+    # limpeza: cada teste começa do zero
     app.dependency_overrides.clear()
+    Base.metadata.drop_all(bind=engine_teste)

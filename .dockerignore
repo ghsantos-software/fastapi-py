@@ -1,37 +1,35 @@
-# Controle de versão
-.git/
+# controle de versão
+.git
 .gitignore
+.gitattributes
 
-# Ambientes virtuais e cache do Python
-.venv/
-venv/
-env/
-__pycache__/
-*.py[cod]
+# ambiente Python local
+.venv
+venv
+__pycache__
+*.pyc
 
-# Bancos locais
+# artefatos de teste e lint
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# segredos e banco local
+.env
+.env.*
 *.db
 *.sqlite
 *.sqlite3
 
-# Cache de testes/ferramentas
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-
-# Segredos e env local
-.env
-.env.*
-!.env.example
-
-# Meta que não precisa dentro da imagem
-.github/
+# coisas que não fazem parte da aplicação rodando
+tests
+docs
+infra
+.github
+.vscode
+.idea
 README.md
-.dockerignore
-Dockerfile
 docker-compose.yml
-
-# Editor / SO
-.vscode/
-.idea/
-.DS_Store
+Dockerfile
+.dockerignore
