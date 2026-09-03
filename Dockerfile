@@ -1,6 +1,29 @@
+# imagem base: Python 3.12 "slim" (Debian enxuto, sem compiladores)
 FROM python:3.12-slim
+
+# logs saem na hora (não ficam presos num buffer); não gera .pyc na imagem
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
 WORKDIR /app
+
+# usuário sem privilégios (não rodar como root)
+RUN useradd --create-home appuser
+
+# 1) dependências primeiro (camada cacheável).
+#    --only-binary=:all: recusa pacotes que só têm código-fonte,
+#    evitando execução de setup.py durante a instalação.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+RUN pip install --no-cache-dir --only-binary=:all: -r requirements.txt
+
+# 2) só os arquivos que a aplicação precisa (nada de "COPY . .")
+COPY --chown=appuser:appuser main.py database.py alembic.ini docker-entrypoint.sh ./
+COPY --chown=appuser:appuser alembic ./alembic
+
+USER appuser
+
+# porta que a app escuta (só documentação; não publica nada sozinho)
+EXPOSE 8000
+
+# ao iniciar o container: roda a migração e sobe o servidor
+CMD ["sh", "docker-entrypoint.sh"]
