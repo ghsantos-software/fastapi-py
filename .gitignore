@@ -24,4 +24,5 @@ __pycache__/
 *.tfstate.*
 *.tfvars
 
-nodes.md 
+# anotações pessoais de estudo
+nodes.md

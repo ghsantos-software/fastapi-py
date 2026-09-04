@@ -11,7 +11,7 @@ URL_BANCO = os.getenv("DATABASE_URL", "sqlite:///./tarefas.db")
 
 
 argumentos = {"check_same_thread": False} if URL_BANCO.startswith("sqlite") else {}
-engine = create_engine(URL_BANCO, connect_args=argumentos) 
+engine = create_engine(URL_BANCO, connect_args=argumentos)
 
 # "Fábrica" de sessões. Cada requisição HTTP pega uma sessão nova daqui.
 Sessao = sessionmaker(bind=engine, autoflush=False, autocommit=False)
@@ -35,4 +35,3 @@ def obter_banco():
         yield banco
     finally:
         banco.close()
-

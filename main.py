@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import Tarefa, obter_banco
 
 # pega o nome da aplicação a partir da variável de ambiente APP_NAME
-NOME_APLICACAO = os.getenv("APP_NAME", "api-tarefas") 
+NOME_APLICACAO = os.getenv("APP_NAME", "api-tarefas")
 
 # Instância do FastAPI, com o nome da aplicação definido acima.
 app = FastAPI(title=NOME_APLICACAO)
@@ -70,9 +70,3 @@ def marcar_como_concluida(
     banco.refresh(tarefa)
 
     return tarefa
-
-
-
-
-
-
