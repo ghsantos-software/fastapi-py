@@ -6,6 +6,13 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 1
+    groups:
+      # pydantic e pydantic_core são acoplados (o core em Rust tem faixa
+      # estreita de versão compatível) — sem isso o Dependabot bumpa um
+      # sem o outro e quebra o "pip install" (foi o que houve no PR #36).
+      pydantic:
+        patterns:
+          - "pydantic*"
 
   # as actions usadas nos workflows (uses: actions/checkout@v4 ...)
   - package-ecosystem: github-actions
