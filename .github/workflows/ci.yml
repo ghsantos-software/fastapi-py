@@ -1,139 +1,70 @@
-# ============================================================
-# ci.yml — o "robô" que roda a cada push/PR pra branch main.
-# Se qualquer passo falhar, o PR fica bloqueado pra merge.
-# ============================================================
-
 name: CI
 
-# Quando rodar:
 on:
   push:
-    branches: [main]          # depois de um merge na main
+    branches: [main]
   pull_request:
-    branches: [main]          # em todo PR aberto contra a main
+    branches: [main]
 
-# O token que o robô usa só precisa LER o repositório (menos poder = mais seguro).
 permissions:
   contents: read
 
-# Se você empurrar 2 vezes seguidas no mesmo PR, cancela a execução anterior
-# em vez de deixar as duas rodando (economiza minutos).
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-
-  # ---------- Job 1: qualidade (lint + migração + testes) ----------
   quality:
-    runs-on: ubuntu-latest     # máquina Linux limpa, fornecida pelo GitHub
-    timeout-minutes: 10        # se travar, o GitHub mata em 10 min
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
-    # Sobe um Postgres descartável ao lado deste job (só existe enquanto o job roda).
     services:
       db:
         image: postgres:16
         env:
-          POSTGRES_USER: fastapi
-          POSTGRES_PASSWORD: fastapi
-          POSTGRES_DB: fastapi
+          POSTGRES_USER: tarefas
+          POSTGRES_PASSWORD: tarefas
+          POSTGRES_DB: tarefas
         ports:
           - 5432:5432
-        # ">-" junta as linhas abaixo numa string só. Opções do healthcheck:
-        # o GitHub espera o Postgres responder ao "pg_isready" antes de rodar os steps.
         options: >-
-          --health-cmd "pg_isready -U fastapi -d fastapi"
+          --health-cmd "pg_isready -U tarefas -d tarefas"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
-    # Variáveis fictícias: a app lê essas no import, senão nem carrega.
     env:
-      SECRET_KEY: dummy-key-for-ci
-      ALGORITHM: HS256
-      ACESS_TOKEN_EXPIRE_MINUTES: "30"
-      DATABASE_URL: postgresql://fastapi:fastapi@localhost:5432/fastapi
+      DATABASE_URL: postgresql://tarefas:tarefas@localhost:5432/tarefas
 
     steps:
-      # "uses:" = ação pronta (de terceiros).   "run:" = comando de shell nosso.
-      - uses: actions/checkout@v7        # baixa o código do repo pra máquina
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v7    # instala o Python
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"        # mesma versão do Dockerfile
-          cache: pip                    # guarda os downloads do pip entre execuções
+          python-version: "3.12"
+          cache: pip
 
-      - name: Install dependencies
-        run: |
-          pip install --only-binary=:all: -r requirements-dev.txt
+      - name: Instalar dependências
+        run: pip install -r requirements-dev.txt
 
-      - name: Lint
-        run: ruff check .               # checa estilo e ordem dos imports
+      - name: Lint (ruff)
+        run: ruff check .
 
-      - name: Apply migrations
-        run: alembic upgrade head       # roda as migrações no Postgres do "services"
+      - name: Aplicar migrações
+        run: alembic upgrade head
 
-      - name: Check for drift between models and migrations
-        run: alembic check              # os models batem com as migrações?
+      - name: Checar divergência modelo x migração
+        run: alembic check
 
-      - name: Import smoke test
-        run: python -c "import main; print('app imports OK')"   # a app carrega sem erro?
+      - name: Testes
+        run: pytest
 
-      - name: Tests
-        run: pytest -q
-
-  # ---------- Job 2: imagem Docker ----------
-  # Toda execução: builda a imagem, carrega no daemon e roda um smoke test
-  #                (garante que a imagem REALMENTE sobe, não só que "buildou").
-  # Só no merge pra main: publica no GitHub Container Registry (ghcr.io).
-  docker-build:
+  docker:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: quality
 
-    permissions:
-      contents: read    # checkout
-      packages: write   # publicar a imagem no ghcr.io
-
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
-      # Ações do "docker" pinadas em SHA (o Dependabot atualiza sozinho).
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Build da imagem
+        run: docker build -t tarefas-api:ci .
 
-      # Builda e carrega a imagem no daemon local (load) para poder rodá-la.
-      - name: Build (carrega local)
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: .
-          load: true
-          tags: fastapi-py:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Roda a imagem de verdade: se faltar um arquivo no COPY do Dockerfile,
-      # o "import main" quebra AQUI (foi o que derrubou o primeiro deploy).
-      # Ver docs/postmortems/2026-09-01-deploy-security-py.md
-      - name: Smoke test da imagem
-        run: docker run --rm --entrypoint python fastapi-py:ci -c "import main; print('image OK')"
-
-      # Login no ghcr.io com o token que o GitHub já dá pro workflow.
-      - name: Login no GHCR
-        if: github.event_name == 'push'
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Publica só no merge pra main; reaproveita o cache do build acima (não rebuilda).
-      - name: Push para o GHCR
-        if: github.event_name == 'push'
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
-          cache-from: type=gha
+      - name: Smoke test (a imagem SOBE?)
+        run: docker run --rm --entrypoint python tarefas-api:ci -c "import main; print('imagem OK')"

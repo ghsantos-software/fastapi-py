@@ -1,15 +1,14 @@
 target-version = "py312"
-line-length = 88
+line-length = 100
 
-# pastas que o ruff não deve analisar (código gerado por framework)
 extend-exclude = ["alembic", ".venv", "venv"]
 
 [lint]
-# E = estilo | F = erros reais (pyflakes) | I = ordenação de imports
-select = ["E", "F", "I"]
-# E501 = "linha longa". Seu código tem comentários gigantes; ignoramos por ora.
+select = ["E", "F", "I", "B"]
 ignore = ["E501"]
 
-[lint.per-file-ignores]
-# main.py importa as rotas no fim do arquivo de propósito (evita import circular)
-"main.py" = ["E402"]
+[lint.isort]
+known-first-party = ["database", "main"]
+
+[lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body", "fastapi.Header"]
