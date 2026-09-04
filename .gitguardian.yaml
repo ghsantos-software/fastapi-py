@@ -1,0 +1,7 @@
+version: 2
+
+secret:
+  ignored-paths:
+    # arquivo de template com valores de exemplo (POSTGRES_USER/PASSWORD/DB),
+    # não são segredos reais — é a função do .env.example
+    - ".env.example"

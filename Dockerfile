@@ -16,9 +16,11 @@ RUN useradd --create-home appuser
 COPY requirements.txt .
 RUN pip install --no-cache-dir --only-binary=:all: -r requirements.txt
 
-# 2) só os arquivos que a aplicação precisa (nada de "COPY . .")
-COPY --chown=appuser:appuser main.py database.py alembic.ini docker-entrypoint.sh ./
-COPY --chown=appuser:appuser alembic ./alembic
+# 2) só os arquivos que a aplicação precisa (nada de "COPY . .").
+#    Copiados como root (dono root, sem escrita para o appuser): se a app
+#    for comprometida, o atacante não consegue reescrever o próprio código.
+COPY main.py database.py alembic.ini docker-entrypoint.sh ./
+COPY alembic ./alembic
 
 USER appuser
 
