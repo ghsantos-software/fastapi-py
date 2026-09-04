@@ -1,5 +1,5 @@
 # imagem base: Python 3.12 "slim" (Debian enxuto, sem compiladores)
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # logs saem na hora (não ficam presos num buffer); não gera .pyc na imagem
 ENV PYTHONUNBUFFERED=1 \
